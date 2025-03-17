@@ -43,7 +43,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Load the dataset
-file_path = "2025-03-17T01-51_export.csv"  # Update this to match your local file path
+file_path = "Superstore_sales_utf8.csv"  # Update this to match your local file path
 df = pd.read_csv(file_path)
 
 # Convert Sales and Profit to numerical values (if not already)
