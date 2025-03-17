@@ -38,17 +38,13 @@ st.write("### (5) use the delta option in the overall profit margin metric to sh
 
 
 
-import os
-import pandas as pd
 import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
 
 # Load the dataset
 file_path = "Superstore_sales_utf8.csv")
-
-if os.path.exists(file_path):
 df = pd.read_csv(file_path)
-else:
-st.error("Error: Dataset file not found. Please upload 'Superstore_sales_utf8.csv' to the repository.")
 
 # Convert Sales and Profit to numerical values (if not already)
 df["Sales"] = pd.to_numeric(df["Sales"], errors="coerce")
