@@ -37,63 +37,61 @@ st.write("### (4) show three metrics (https://docs.streamlit.io/library/api-refe
 st.write("### (5) use the delta option in the overall profit margin metric to show the difference between the overall average profit margin (all products across all categories)")
 
 
-
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
+import plotly.express as px
 
-# Load the dataset
-file_path = "Superstore_sales_utf8.csv"
-df = pd.read_csv(file_path)
+# Load data with caching
+@st.cache_data
+def load_data():
+    df = pd.read_csv("Superstore_sales_utf8.csv")
+    # Explicit type conversion
+    df["Sales"] = pd.to_numeric(df["Sales"], errors="coerce")
+    df["Profit"] = pd.to_numeric(df["Profit"], errors="coerce")
+    df["Order_Date"] = pd.to_datetime(df["Order_Date"], errors="coerce")
+    return df
 
-# Convert Sales and Profit to numerical values (if not already)
-df["Sales"] = pd.to_numeric(df["Sales"], errors="coerce")
-df["Profit"] = pd.to_numeric(df["Profit"], errors="coerce")
+df = load_data()
 
-# Convert Order_Date to datetime format
-df["Order_Date"] = pd.to_datetime(df["Order_Date"], errors="coerce")
-
-# Sidebar inputs
+# Sidebar filters
 st.sidebar.header("Filters")
-
-# Dropdown for Category selection
 category = st.sidebar.selectbox("Select Category", df["Category"].unique())
-
-# Multi-select for Sub-Category selection (Filtered by Category)
 sub_categories = df[df["Category"] == category]["Sub_Category"].unique()
 selected_sub_categories = st.sidebar.multiselect("Select Sub-Category", sub_categories, default=sub_categories)
 
-# Filter data based on selection
-filtered_data = df[df["Sub_Category"].isin(selected_sub_categories)]
+# Filter data based on selections
+filtered_data = df[
+    (df["Category"] == category) &
+    (df["Sub_Category"].isin(selected_sub_categories))
+]
 
-# Calculate Metrics
+# Calculate metrics
 total_sales = filtered_data["Sales"].sum()
 total_profit = filtered_data["Profit"].sum()
 selected_profit_margin = (total_profit / total_sales) * 100 if total_sales else 0
 
-# Calculate Overall Profit Margin (all categories)
+# Calculate overall profit margin for delta comparison
 overall_total_sales = df["Sales"].sum()
 overall_total_profit = df["Profit"].sum()
 overall_profit_margin = (overall_total_profit / overall_total_sales) * 100 if overall_total_sales else 0
 
-# Calculate delta (difference between selected and overall profit margin)
+# Calculate delta
 profit_margin_delta = selected_profit_margin - overall_profit_margin
 
-# Display Metrics
-st.metric(label="Total Sales", value=f"${total_sales:,.2f}")
-st.metric(label="Total Profit", value=f"${total_profit:,.2f}")
-st.metric(label="Overall Profit Margin", value=f"{selected_profit_margin:.2f}%", delta=f"{profit_margin_delta:.2f}%")
+# Display metrics in columns
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("Total Sales", f"${total_sales:,.2f}")
+with col2:
+    st.metric("Total Profit", f"${total_profit:,.2f}")
+with col3:
+    st.metric("Profit Margin", f"{selected_profit_margin:.2f}%", delta=f"{profit_margin_delta:.2f}%")
 
-# Line Chart for Sales Over Time
+# Line chart with Plotly
 st.write("### Sales Over Time for Selected Sub-Categories")
 if not filtered_data.empty:
     sales_over_time = filtered_data.groupby("Order_Date")["Sales"].sum().reset_index()
-    fig, ax = plt.subplots()
-    ax.plot(sales_over_time["Order_Date"], sales_over_time["Sales"], marker="o", linestyle="-")
-    ax.set_xlabel("Order Date")
-    ax.set_ylabel("Sales ($)")
-    ax.set_title("Sales Trend")
-    st.pyplot(fig)
+    fig = px.line(sales_over_time, x="Order_Date", y="Sales", title="Sales Trend")
+    st.plotly_chart(fig)
 else:
-    st.write("No data available for the selected filters.")
-
+    st.warning("No data available for the selected filters.")
