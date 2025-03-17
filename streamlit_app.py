@@ -43,7 +43,7 @@ import pandas as pd
 import streamlit as st
 
 # Load the dataset
-file_path = os.path.join(os.path.dirname(file__file__), "Superstore_sales_utf8.csv")
+file_path = "Superstore_sales_utf8.csv")
 
 if os.path.exists(file_path):
 df = pd.read_csv(file_path)
