@@ -44,7 +44,7 @@ import plotly.express as px
 # Load data with caching
 @st.cache_data
 def load_data():
-    df = pd.read_csv("Superstore_sales_utf8.csv")
+    df = pd.read_csv("Superstore_Sales_utf8.csv")
     # Explicit type conversion
     df["Sales"] = pd.to_numeric(df["Sales"], errors="coerce")
     df["Profit"] = pd.to_numeric(df["Profit"], errors="coerce")
