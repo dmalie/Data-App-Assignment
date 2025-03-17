@@ -43,7 +43,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Load the dataset
-file_path = os.path.join(os.path.dirname(__file__) "Superstore_sales_utf8.csv") 
+file_path = os.path.join(os.path.dirname(__file__) "Superstore_sales_utf8.csv")
 df = pd.read_csv(file_path)
 
 # Convert Sales and Profit to numerical values (if not already)
