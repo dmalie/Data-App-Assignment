@@ -44,63 +44,64 @@ import plotly.express as px
 @st.cache_data
 def load_data():
     df = pd.read_csv("Superstore_Sales_utf8.csv")
-    
-    # Explicit type conversion
-    df["Sales"] = pd.to_numeric(df["Sales"], errors="coerce")
-    df["Profit"] = pd.to_numeric(df["Profit"], errors="coerce")
     df["Order_Date"] = pd.to_datetime(df["Order_Date"], errors="coerce")
-    
     return df
 
 df = load_data()
 
-# Sidebar filters
-st.sidebar.header("Filters")
+# Add title
+st.title("Superstore Sales Analytics")
 
-# Dropdown for Category Selection
-category = st.sidebar.selectbox("Select Category", ["All"] + df["Category"].unique().tolist())
+# (1) Category dropdown
+selected_category = st.selectbox(
+    "Select Category", 
+    df["Category"].unique()
+)
 
-# Multi-select for Sub-Category (based on selected Category)
-if category == "All":
-    sub_categories = df["Sub_Category"].unique()
-else:
-    sub_categories = df[df["Category"] == category]["Sub_Category"].unique()
-
-selected_sub_categories = st.sidebar.multiselect("Select Sub-Category", sub_categories, default=sub_categories)
+# (2) Sub-Category multiselect (within selected category)
+available_subcats = df[df["Category"] == selected_category]["Sub_Category"].unique()
+selected_subcats = st.multiselect(
+    "Select Sub-Categories",
+    options=available_subcats,
+    default=available_subcats
+)
 
 # Filter data based on selections
-if category == "All":
-    filtered_data = df[df["Sub_Category"].isin(selected_sub_categories)]
+filtered_df = df[
+    (df["Category"] == selected_category) &
+    (df["Sub_Category"].isin(selected_subcats))
+]
+
+# (4) Metrics columns
+if not filtered_df.empty:
+    total_sales = filtered_df["Sales"].sum()
+    total_profit = filtered_df["Profit"].sum()
+    profit_margin = (total_profit / total_sales) * 100 if total_sales != 0 else 0
+    
+    # (5) Calculate overall profit margin for delta
+    overall_total_sales = df["Sales"].sum()
+    overall_total_profit = df["Profit"].sum()
+    overall_profit_margin = (overall_total_profit / overall_total_sales) * 100 if overall_total_sales != 0 else 0
+    margin_delta = profit_margin - overall_profit_margin
+    
+    # Display metrics
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total Sales", f"${total_sales:,.2f}")
+    with col2:
+        st.metric("Total Profit", f"${total_profit:,.2f}")
+    with col3:
+        st.metric(
+            "Profit Margin (%)", 
+            f"{profit_margin:.1f}%", 
+            delta=f"{margin_delta:.1f}%"
+        )
 else:
-    filtered_data = df[(df["Category"] == category) & (df["Sub_Category"].isin(selected_sub_categories))]
+    st.warning("No data available for selected filters")
 
-# Calculate Metrics
-total_sales = filtered_data["Sales"].sum()
-total_profit = filtered_data["Profit"].sum()
-selected_profit_margin = (total_profit / total_sales) * 100 if total_sales else 0
-
-# Calculate overall profit margin for delta comparison
-overall_total_sales = df["Sales"].sum()
-overall_total_profit = df["Profit"].sum()
-overall_profit_margin = (overall_total_profit / overall_total_sales) * 100 if overall_total_sales else 0
-
-# Delta Calculation
-profit_margin_delta = selected_profit_margin - overall_profit_margin
-
-# Display Metrics in Columns
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.metric("Total Sales", f"${total_sales:,.2f}")
-with col2:
-    st.metric("Total Profit", f"${total_profit:,.2f}")
-with col3:
-    st.metric("Profit Margin", f"{selected_profit_margin:.2f}%", delta=f"{profit_margin_delta:.2f}%")
-
-# Line Chart with Plotly
-st.write("### Sales Over Time for Selected Sub-Categories")
-if not filtered_data.empty:
-    sales_over_time = filtered_data.groupby("Order_Date")["Sales"].sum().reset_index()
-    fig = px.line(sales_over_time, x="Order_Date", y="Sales", title="Sales Trend")
+# (3) Line chart of sales over time
+if not filtered_df.empty:
+    st.subheader("Sales Over Time")
+    time_series = filtered_df.groupby("Order_Date")["Sales"].sum().reset_index()
+    fig = px.line(time_series, x="Order_Date", y="Sales")
     st.plotly_chart(fig)
-else:
-    st.warning("No data available for the selected filters.")
